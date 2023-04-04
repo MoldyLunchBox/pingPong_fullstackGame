@@ -1,6 +1,7 @@
 ##Getting started
 navigate to one of the folders and enter the following command:
 ```
+both folders: npm install
 back-end: npm run start:dev
 front-end: npm run dev
 ```
