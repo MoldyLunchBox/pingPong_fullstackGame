@@ -107,6 +107,24 @@ body{
     }
   
 }
+@keyframes fadeout {
+  from{
+    opacity: 1;
+  }
+  to{
+    opacity: 0;
+  }
+  
+  
+}
+@keyframes growup {
+  0% {
+      transform: scale(1.0);
+  }
+  100% {
+      transform: scale(10.0);
+  }
+}
 
 @keyframes pongleft {
   0%{
@@ -228,4 +246,11 @@ left: 1px;
   background-image: url('../image/bg.jpg');
   background-size: cover;
   /* Add any additional styles you need */
+}
+
+
+
+
+#matter-Container{
+  background-color: #ADE4DB; /* Set the desired background color */
 }

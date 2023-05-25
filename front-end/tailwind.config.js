@@ -8,6 +8,14 @@ module.exports = {
   theme: {
     extend: {
       keyframes: {
+        fadeOut: {
+          'from': {
+              opacity: '1',
+          },
+          'to': {
+              opacity: '0',
+          },
+        },
         bol: {
           '0%': { transform: 'translate(0, 0)' },
           '50%': { transform: 'translate(300%, 30%)' },
@@ -43,6 +51,7 @@ module.exports = {
         }
       },
       animation: {
+        'fadeOut': 'fade-out 1s ease-out',
         'bol': 'bol 4s infinite',
         'pongleft': 'pongleft 3s infinite',
         squa: 'squa 2s infinite',

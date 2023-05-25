@@ -30,6 +30,11 @@ interface MatterBodies {
     roof: Matter.Body
     wall: Matter.Body
     wallLeft: Matter.Body
+    circleA: Matter.Body
+    circleB: Matter.Body
+    circleC:  Matter.Body
+    centerLine: Matter.Body
+
 }
 interface measurements {
     divHeight: number,
@@ -43,6 +48,25 @@ interface measurements {
     rightPaddle: { x: number, y: number, width: number, height: number },
 
 }
+
+interface Score {
+    left: number;
+    right: number;
+  }
+  
+  interface SetScoreFn {
+    (score: Score): void;
+  }
+  interface SetCountDownfn {
+    (countDown: number): void;
+  }
+  interface gameTexture{
+    leftP : string,
+    rightP: string,
+    wall: string,
+    ball: string,
+    background: string,
+  }
 // function saveMeasurements(div: HTMLElement, obj: measurements){
 //     obj = {
 //         divHeight: div.clientHeight,
@@ -56,16 +80,23 @@ interface measurements {
 export class matterJsModules {
     socket: Socket
     modules: MatterModules;
-    test: Matter.Body;
     objects: MatterObjects = { engine: null, render: null, runner: null, mouse: null, mouseConstraint: null };
     bodies: MatterBodies
     paddleSide: string = ""
     matterContainer = document.querySelector("#matter-Container") as HTMLElement
     obj: measurements
+    colors: gameTexture
     constructor(roomId: string) {
         this.socket = io('http://localhost:3008');
         this.obj = this.saveMeasurements(this.matterContainer)
         this.socket.emit('joinRoom', { roomId: roomId, obj: this.obj });
+        this.colors = {
+            leftP: "#6DA9E4",
+            rightP: "#F6BA6F",
+            wall: "#FFEBEB",
+            ball: "red",
+            background: "#ADE4DB",
+        }
         this.modules = {
             Engine: Matter.Engine,
             Render: Matter.Render,
@@ -76,20 +107,23 @@ export class matterJsModules {
             Mouse: Matter.Mouse,
             MouseConstraint: Matter.MouseConstraint,
         }
-        this.test = this.modules.Bodies.circle(400, 240, 20, { isStatic: true })
         this.bodies = {
-            ball: this.modules.Bodies.circle(500, 500, 20, { label: "ball" }),
-
+            ball: this.modules.Bodies.circle(500, 500, 20, { isStatic: true, label: "ball" }),
+            circleA: this.modules.Bodies.circle(this.obj.divWidth / 2, this.obj.divHeight / 2, 80, { isStatic: true, collisionFilter: {group: -1, }, render: { fillStyle: this.colors.wall }, label: "circleA" }),
+            circleB: this.modules.Bodies.circle(this.obj.divWidth / 2, this.obj.divHeight / 2, 70, {isStatic: true, collisionFilter: {group: -1, }, render: { fillStyle: this.colors.background }, label: "circleB" }),
+            circleC: this.modules.Bodies.circle(this.obj.divWidth / 2, this.obj.divHeight / 2, 10, {isStatic: true, collisionFilter: {group: -1, }, render: { fillStyle: this.colors.wall}, label: "circleC" }),
+            centerLine : this.modules.Bodies.rectangle(this.obj.divWidth / 2, this.obj.divHeight / 2,this.obj.divWidth, 10, {isStatic: true, collisionFilter: {group: -1, }, render: { fillStyle: this.colors.wall }, label: "centerLine" }),
+            
             leftPaddle: this.modules.Bodies.rectangle(this.obj.leftPaddle.x, this.obj.leftPaddle.y, this.obj.leftPaddle.width, this.obj.leftPaddle.height, {
                 label: "lPadel",
                 isStatic: true, render: {
-                    fillStyle: 'green'
+                    fillStyle: this.colors.leftP
                 }
             }),
             rightPaddle: this.modules.Bodies.rectangle(this.obj.rightPaddle.x, this.obj.rightPaddle.y, this.obj.rightPaddle.width, this.obj.rightPaddle.height, {
                 label: "rPadel",
                 isStatic: true, render: {
-                    fillStyle: 'red'
+                    fillStyle: this.colors.rightP
                 }
             }),
             myPaddle: this.modules.Bodies.rectangle(0, 0, 0, 0, { isStatic: true }),
@@ -109,13 +143,13 @@ export class matterJsModules {
             wall: this.modules.Bodies.rectangle(this.obj.wallRight.x, this.obj.wallRight.y, this.obj.wallRight.width, this.obj.wallRight.height, {
                 isStatic: true,
                 render: {
-                    fillStyle: 'green'
+                    fillStyle: this.colors.wall
                 }
             }),
             wallLeft: this.modules.Bodies.rectangle(this.obj.wallLeft.x, this.obj.wallLeft.y, this.obj.wallLeft.width, this.obj.wallLeft.height, {
                 isStatic: true,
                 render: {
-                    fillStyle: 'green'
+                    fillStyle: this.colors.wall
                 }
             }),
 
@@ -139,12 +173,11 @@ export class matterJsModules {
     }
 
     saveMeasurements(div: HTMLElement) {
-        console.log("height ", div.clientHeight)
-        console.log("width ", div.clientWidth)
+
         const obj = {
             divHeight: div.clientHeight,
             divWidth: div.clientWidth,
-            ball: { x: 30, y: 30, radius:  20 },
+            ball: { x: div.clientHeight/2, y: div.clientWidth/2, radius:  20 },
             wallBottom: { x: div.clientWidth / 2, y: div.clientHeight, width: div.clientWidth, height: 20 },
             wallTop: { x: div.clientWidth / 2, y: 0, width: div.clientWidth, height: 20 },
             wallLeft: { x: 0, y: div.clientHeight / 2, width: 20, height: div.clientHeight },
@@ -209,13 +242,12 @@ export class matterJsModules {
 
     createBodies() {
 
-        this.modules.Composite.add(this.objects.engine.world, [this.bodies.ball, this.test, this.bodies.leftPaddle, this.bodies.ground, this.bodies.roof, this.bodies.wall, this.bodies.wallLeft, this.bodies.rightPaddle]);
+        this.modules.Composite.add(this.objects.engine.world, [this.bodies.circleA, this.bodies.circleB, this.bodies.circleC, this.bodies.centerLine, this.bodies.ball, this.bodies.leftPaddle, this.bodies.wall, this.bodies.wallLeft, this.bodies.rightPaddle]);
     }
     events() {
 
         Events.on(this.objects.mouseConstraint, "mousemove", (e) => {
             this.modules.Body.setPosition(this.bodies.myPaddle, { x: e.mouse.position.x, y: this.bodies.myPaddle.position.y });
-            console.log(this.bodies.myPaddle.position)
             this.socket?.emit(this.paddleSide, { x:  e.mouse.position.x, y: this.bodies.myPaddle.position.y})
 
         })
@@ -237,8 +269,8 @@ export class matterJsModules {
     socketStuff() {
         this.socket.on('ballPosition', (data) => {
             // Update the ball's position
-            this.bodies.ball.position.x = this.obj.divWidth * data.x / 375
-            this.bodies.ball.position.y = this.obj.divHeight * data.y / 667
+            this.bodies.ball.position.x =  data.x 
+            this.bodies.ball.position.y = data.y 
             // console.log(this.bodies.ball.position.x, this.bodies.ball.position.y)
 
         });
@@ -251,7 +283,6 @@ export class matterJsModules {
             // Update the other's paddle position
             if (this.paddleSide == "left")
                 this.socket.on("right", (data) => {
-                    console.log("we got ipdated")
                     this.modules.Body.setPosition(this.bodies.othersPaddle, { x: data.x , y:  data.y});
                 });
             else
@@ -262,47 +293,13 @@ export class matterJsModules {
         }
     }
 
-    responsivity(oldScreen: { w: number, h: number }, newScreen: { w: number, h: number }, setHeight: (value: React.SetStateAction<string>) => void) {
-        console.log(oldScreen)
-        console.log(newScreen)
-        // setHeight(`${newScreen.h - 1}vh`)
-        this.obj.divWidth = newScreen.w
-        this.obj.divHeight= newScreen.h
-        this.objects.render.canvas.width = newScreen.w
-        this.objects.render.canvas.height = newScreen.h
-        this.modules.Composite.allBodies(this.objects.engine.world).forEach(function(body) {
-            // Update dimensions
-            var  scaleX = newScreen.w / oldScreen.w
-            var  scaleY = newScreen.h / oldScreen.h;
-            console.log(body.label)
-            const scale = (newScreen.w / oldScreen.w + newScreen.h / oldScreen.h) / 2;
-
-            if (body.label !== "ball")
-            Matter.Body.scale(body, scaleX, scaleY);
-            else
-            Matter.Body.scale(body, scale, scale);
-
-            if (body.label == "lPadel")
-                console.log(body.bounds.max.x - body.bounds.min.x)
-            // Update position
-            var newPosition = {
-              x: body.position.x * scaleX,
-              y: body.position.y * scaleY
-            };
-            Matter.Body.setPosition(body, newPosition);
+    updateGameScore(setScore: SetScoreFn, setCountDown: SetCountDownfn){
+        this.socket.on('score', (data) => {
+            const receivedScore = data.score;
+            setScore(receivedScore);
+      setCountDown(0)
+console.log(receivedScore)
           });
-          this.socket?.emit("windowResize", { newScreen: newScreen })
-        // for (var i = 0; i < this.objects.engine.world.bodies.length; i++) {
-        //     var body = this.objects.engine.world.bodies[i];
-        //     console.log(body.width)
-        //     this.modules.Body.setPosition(body, {
-        //         x: body.position.x * (newScreen.w / oldScreen.w),
-        //         y: body.position.y * (newScreen.h / oldScreen.h)
-        //     });
-
-        // }
-
-
     }
 
 
