@@ -15,7 +15,21 @@ interface measurements{
     rightPaddle:{ x: number, y: number, width: number, height: number },
 
 }
+function saveMeasurements(div: { height: number, width: number }) {
 
+    const obj = {
+        divWidth: div.width,
+        divHeight: div.height,
+        ball: { x: div.height / 2, y: div.width / 2, radius: 20 },
+        wallBottom: { x: div.width / 2, y: div.height, width: div.width, height: 20 },
+        wallTop: { x: div.width / 2, y: 0, width: div.width, height: 20 },
+        wallLeft: { x: 0, y: div.height / 2, width: 20, height: div.height },
+        wallRight: { x: div.width, y: div.height / 2, width: 20, height: div.height },
+        leftPaddle: { x: div.width / 2, y: 50, width: 100, height: 20 },
+        rightPaddle: { x: div.width / 2, y: div.height - 50, width: 100, height: 20 },
+    }
+    return obj
+}
 class matterNode {
     private engine: Engine;
     private world: World;
@@ -34,7 +48,7 @@ class matterNode {
         this.roomId = roomId
         this.server = server;
         // cords and measurements of objects
-        this.obj = obj
+        this.obj = saveMeasurements({ width: 375, height: 375 * (16 / 9) })
         // this.translateCords() // translate the cords from frontend screen to backend screen
         obj = this.obj
         this.engine = Engine.create();

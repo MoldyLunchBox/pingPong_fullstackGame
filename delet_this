@@ -89,15 +89,13 @@ export class matterJsModules {
     matterContainer = document.querySelector("#matter-Container") as HTMLElement
     obj: measurements
     colors: gameTexture
-    oldDim: { w: number, h: number }
     // solids : solidBodies
     constructor(roomId: string) {
         const windowHeight = window.innerHeight;
-        this.oldDim = { w: this.matterContainer.clientWidth, h: this.matterContainer.clientHeight }
+        console.log('Window height:', windowHeight);
         this.socket = io('http://localhost:3008');
-        this.obj = this.saveMeasurements({ width: this.matterContainer.clientWidth, height: this.matterContainer.clientHeight })
-
-        this.socket.emit('joinRoom', { roomId: roomId, obj: this.obj });
+        this.obj = this.saveMeasurements({ width: 375, height: 375 * (16 / 9) })
+        this.socket.emit('joinRoom', { roomId: roomId});
         this.colors = {
             leftP: "#6DA9E4",
             rightP: "#F6BA6F",
@@ -116,19 +114,19 @@ export class matterJsModules {
             MouseConstraint: Matter.MouseConstraint,
         }
         this.bodies = {
-            ball: this.modules.Bodies.circle(500, 500, this.getBallRadius(), { isStatic: true, label: "ball" }),
+            ball: this.modules.Bodies.circle(500, 500, 20, { isStatic: true, label: "ball" }),
             circleA: this.modules.Bodies.circle(this.obj.divWidth / 2, this.obj.divHeight / 2, 80, { isStatic: true, collisionFilter: { group: -1, }, render: { fillStyle: this.colors.wall }, label: "circleA" }),
             circleB: this.modules.Bodies.circle(this.obj.divWidth / 2, this.obj.divHeight / 2, 70, { isStatic: true, collisionFilter: { group: -1, }, render: { fillStyle: this.colors.background }, label: "circleB" }),
             circleC: this.modules.Bodies.circle(this.obj.divWidth / 2, this.obj.divHeight / 2, 10, { isStatic: true, collisionFilter: { group: -1, }, render: { fillStyle: this.colors.wall }, label: "circleC" }),
             centerLine: this.modules.Bodies.rectangle(this.obj.divWidth / 2, this.obj.divHeight / 2, this.obj.divWidth, 10, { isStatic: true, collisionFilter: { group: -1, }, render: { fillStyle: this.colors.wall }, label: "centerLine" }),
 
-            leftPaddle: this.modules.Bodies.rectangle(this.obj.leftPaddle.x, this.obj.leftPaddle.y, this.getPaddleDim().width, this.getPaddleDim().height, {
+            leftPaddle: this.modules.Bodies.rectangle(this.obj.leftPaddle.x, this.obj.leftPaddle.y, this.obj.leftPaddle.width, this.obj.leftPaddle.height, {
                 label: "lPadel",
                 isStatic: true, render: {
                     fillStyle: this.colors.leftP
                 }
             }),
-            rightPaddle: this.modules.Bodies.rectangle(this.obj.rightPaddle.x, this.obj.rightPaddle.y, this.getPaddleDim().width, this.getPaddleDim().height, {
+            rightPaddle: this.modules.Bodies.rectangle(this.obj.rightPaddle.x, this.obj.rightPaddle.y, this.obj.rightPaddle.width, this.obj.rightPaddle.height, {
                 label: "rPadel",
                 isStatic: true, render: {
                     fillStyle: this.colors.rightP
@@ -184,24 +182,12 @@ export class matterJsModules {
         })
 
     }
-    getBallRadius(){
 
-        const widthRatio = this.matterContainer.clientWidth / 375;
-        const heightRatio = this.matterContainer.clientHeight / 375 * (16 / 9)
-        return  20 * widthRatio
-    }
-
-    getPaddleDim(){
-        const widthRatio = this.matterContainer.clientWidth / 375;
-        const heightRatio = this.matterContainer.clientHeight / 375 * (16 / 9)
-        return  {width: 100 * widthRatio, height: 20 * widthRatio}
-    }
-  
     saveMeasurements(div: { height: number, width: number }) {
 
         const obj = {
-            divWidth: div.width,
-            divHeight: div.height,
+            divWidth: 375,
+            divHeight: 375 * (16 / 9),
             ball: { x: div.height / 2, y: div.width / 2, radius: 20 },
             wallBottom: { x: div.width / 2, y: div.height, width: div.width, height: 20 },
             wallTop: { x: div.width / 2, y: 0, width: div.width, height: 20 },
@@ -250,12 +236,7 @@ export class matterJsModules {
 
         Events.on(this.objects.mouseConstraint, "mousemove", (e) => {
             this.modules.Body.setPosition(this.bodies.myPaddle, { x: e.mouse.position.x, y: this.bodies.myPaddle.position.y });
-            const oldWidth = this.matterContainer.clientWidth; 
-            const oldHeight = this.matterContainer.clientHeight; 
-            const newWidth =  375
-            const newHeight =  375 * (16 / 9)
-            const { widthRatio, heightRatio } = this.getResizeRatio(oldWidth, oldHeight, newWidth, newHeight)
-            this.socket?.emit(this.paddleSide, { x: e.mouse.position.x * widthRatio, y: this.bodies.myPaddle.position.y * heightRatio })
+            this.socket?.emit(this.paddleSide, { x: e.mouse.position.x, y: this.bodies.myPaddle.position.y })
 
         })
 
@@ -273,12 +254,18 @@ export class matterJsModules {
         this.modules.Runner.run(this.objects.runner, this.objects.engine);
     }
 
-    windowSizeEvent(height: number) {
+    windowSizeEvent(setHeight: React.Dispatch<React.SetStateAction<number>>) {
+        const handleResize = () => {
 
+            setHeight(this.matterContainer.clientWidth * 16 / 9); // Update the width based on the window size
+            this.onWindowSizeChange()
+        };
 
-        this.onWindowSizeChange()
+        window.addEventListener('resize', handleResize);
 
-
+        return () => {
+            window.removeEventListener('resize', handleResize); // Clean up the event listener
+        };
     }
     onWindowSizeChange() {
         function calculateRectangleVertices(dimensions: { width: number, height: number, x: number, y: number }) {
@@ -298,26 +285,46 @@ export class matterJsModules {
         const aspectRatio = 16 / 9; // Replace with your desired aspect ratio
         const newWidth = this.matterContainer.clientWidth; // Replace with your desired width
         const newHeight = this.matterContainer.clientHeight; // Replace with your desired height
-        const oldWidth = this.oldDim.w
-        const oldHeight = this.oldDim.h
+        const oldWidth = this.obj.divWidth
+        const oldHeight = this.obj.divHeight
+        console.log(newWidth, newHeight, oldWidth, oldHeight)
         const widthRatio = newWidth / oldWidth;
         const heightRatio = newHeight / oldHeight;
         // this.modules.Body.set(ground, 'width', window.innerWidth);
         const modules = this.modules
         const dimenssions = this.obj
         const bodies = this.bodies
+        console.clear()
         this.modules.Composite.allBodies(this.objects.engine.world).forEach(function (body) {
+            switch (body.label) {
+                case 'lPadel':
+                    modules.Body.set(body, 'width', dimenssions.leftPaddle.width * widthRatio);
+                    break;
+                case 'rPadel':
+                    modules.Body.set(body, 'width', dimenssions.rightPaddle.width * widthRatio);
+                    break;
+                case 'roof':
+                    modules.Body.set(body, 'width', dimenssions.wallTop.width * widthRatio);
+                    break;
 
-            if (body.label !== "ball")
-                Matter.Body.scale(body, widthRatio, heightRatio);
-                else
-                Matter.Body.scale(body, widthRatio, widthRatio);
-
-            var newPosition = {
-                x: body.position.x * widthRatio,
-                y: body.position.y * heightRatio
-            };
-            Matter.Body.setPosition(body, newPosition);
+                case 'ground':
+                    modules.Body.set(body, 'width', dimenssions.wallBottom.width * widthRatio);
+                    break;
+                case 'wallRight':
+                    var  scaleX = newWidth / oldWidth
+                    var  scaleY = oldHeight / oldScreen.h;
+                    console.log(body.label)
+                    if (body.label !== "ball")
+                    Matter.Body.scale(body, scaleX, scaleY);
+                    modules.Body.set(body, 'width', dimenssions.wallRight.width * widthRatio);
+                    break;
+                case 'wallLeft':
+                    const vertices = calculateRectangleVertices(dimenssions.wallLeft)
+                    break;
+                default:
+                    // Handle cases for other bodies if necessary
+                    console.log('Default case');
+            }
             // var  scaleX = newScreen.w / oldScreen.w
             // var  scaleY = newScreen.h / oldScreen.h;
             // console.log(body.label)
@@ -334,30 +341,14 @@ export class matterJsModules {
             // Matter.Body.setPosition(body, newPosition);
         });
         this.modules.Engine.update(this.objects.engine)
-        this.oldDim = { w: newWidth, h: newHeight }
-        this.objects.render.canvas.width = newWidth
-        this.objects.render.canvas.height = newHeight
+
     }
 
     socketStuff() {
-        const newWidth = this.matterContainer.clientWidth; // Replace with your desired width
-        const newHeight = this.matterContainer.clientHeight; // Replace with your desired height
-        const oldWidth = 375
-        const oldHeight = 375 * (16 / 9)
-        console.log(9 / 16, oldWidth / oldHeight, newWidth / newHeight, newWidth)
-        const widthRatio = newWidth / oldWidth;
-        const heightRatio = newHeight / oldHeight;
         this.socket.on('ballPosition', (data) => {
-            const oldWidth = 375
-            const oldHeight = 375 * (16 / 9)
-            const newWidth = this.matterContainer.clientWidth; 
-            const newHeight = this.matterContainer.clientHeight; 
-            const { widthRatio, heightRatio } = this.getResizeRatio(oldWidth, oldHeight, newWidth, newHeight)
             // Update the ball's position
-            this.bodies.ball.position.x = data.x * widthRatio
-            this.bodies.ball.position.y = data.y * heightRatio
-            // Matter.Body.scale(this.bodies.ball, widthRatio, widthRatio);
-            console.log(widthRatio, heightRatio)
+            this.bodies.ball.position.x = data.x
+            this.bodies.ball.position.y = data.y
             // console.log(this.bodies.ball.position.x, this.bodies.ball.position.y)
 
         });
@@ -365,36 +356,16 @@ export class matterJsModules {
 
     }
 
-    getResizeRatio(oldWidth: number, oldHeight: number, newWidth: number, newHeight: number) {
-
-
-        console.log(9 / 16, oldWidth / oldHeight, newWidth / newHeight, newWidth)
-        const widthRatio = newWidth / oldWidth;
-        const heightRatio = newHeight / oldHeight;
-        return {widthRatio, heightRatio}
-    }
-
     updateOtherPaddle() {
-
         if (this.paddleSide.length > 1) {
             // Update the other's paddle position
             if (this.paddleSide == "left")
                 this.socket.on("right", (data) => {
-                    const oldWidth = 375
-                    const oldHeight = 375 * (16 / 9)
-                    const newWidth = this.matterContainer.clientWidth;
-                    const newHeight = this.matterContainer.clientHeight;
-                    const { widthRatio, heightRatio } = this.getResizeRatio(oldWidth, oldHeight, newWidth, newHeight)
-                    this.modules.Body.setPosition(this.bodies.othersPaddle, { x: data.x * widthRatio, y: data.y * heightRatio });
+                    this.modules.Body.setPosition(this.bodies.othersPaddle, { x: data.x, y: data.y });
                 });
             else
                 this.socket.on("left", (data) => {
-                    const oldWidth = 375
-                    const oldHeight = 375 * (16 / 9)
-                    const newWidth = this.matterContainer.clientWidth;
-                    const newHeight = this.matterContainer.clientHeight;
-                    const { widthRatio, heightRatio } = this.getResizeRatio(oldWidth, oldHeight, newWidth, newHeight)
-                    this.modules.Body.setPosition(this.bodies.othersPaddle, {x: data.x * widthRatio, y: data.y * heightRatio });
+                    this.modules.Body.setPosition(this.bodies.othersPaddle, { x: data.x, y: data.y });
                 });
 
         }
