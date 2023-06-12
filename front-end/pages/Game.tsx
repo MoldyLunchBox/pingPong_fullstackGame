@@ -12,22 +12,21 @@ export default function Game() {
   const [joinRoom, setJoinRoom] = useState<string>("hidden")
   const [roomName, setRoomName] = useState<string>("")
   const [height, setHeight] = useState<number>(400)
-  const [score, setScore] = useState({ left: 0, right: 0 })
+  const [score, setScore] = useState({ left: -5, right: -5 })
   const [countDown, setCountDown] = useState(5);
   const [animations, setAnimations] = useState(1)
   const [matterjsInstance, setMatterjsInstance] = useState<matterJsModules>()
   useEffect(() => {
-    console.log(animations)
+    console.log("animation", animations)
 
-    if (countDown <= 4 && (score.left || score.right)) {
+    if (countDown <= 4) {
 
       const timer = setTimeout(() => {
-
         setCountDown(countDown + 1);
         setAnimations(animations + 1)
         if (countDown == 2)
           setAnimations(animations + 2)
-      }, 1000); // Example: Increment count every 2 seconds
+      }, 1000); 
 
       return () => clearTimeout(timer);
     }

@@ -259,11 +259,11 @@ export class matterJsModules {
 
         })
 
-        Events.on(this.objects.mouseConstraint, "mouseup", (e) => {
-            // this.modules.Body.setVelocity(this.bodies.ball, { x: 5, y: 5 });
-            this.socket?.emit("mouseUp", { x: this.bodies.myPaddle.position.x, y: e.mouse.position.y })
+        // Events.on(this.objects.mouseConstraint, "mouseup", (e) => {
+        //     // this.modules.Body.setVelocity(this.bodies.ball, { x: 5, y: 5 });
+        //     this.socket?.emit("mouseUp", { x: this.bodies.myPaddle.position.x, y: e.mouse.position.y })
 
-        })
+        // })
     }
 
     run() {
@@ -340,13 +340,7 @@ export class matterJsModules {
     }
 
     socketStuff() {
-        const newWidth = this.matterContainer.clientWidth; // Replace with your desired width
-        const newHeight = this.matterContainer.clientHeight; // Replace with your desired height
-        const oldWidth = 375
-        const oldHeight = 375 * (16 / 9)
-        console.log(9 / 16, oldWidth / oldHeight, newWidth / newHeight, newWidth)
-        const widthRatio = newWidth / oldWidth;
-        const heightRatio = newHeight / oldHeight;
+       
         this.socket.on('ballPosition', (data) => {
             const oldWidth = 375
             const oldHeight = 375 * (16 / 9)
@@ -356,9 +350,6 @@ export class matterJsModules {
             // Update the ball's position
             this.bodies.ball.position.x = data.x * widthRatio
             this.bodies.ball.position.y = data.y * heightRatio
-            // Matter.Body.scale(this.bodies.ball, widthRatio, widthRatio);
-            console.log(widthRatio, heightRatio)
-            // console.log(this.bodies.ball.position.x, this.bodies.ball.position.y)
 
         });
 
@@ -368,7 +359,6 @@ export class matterJsModules {
     getResizeRatio(oldWidth: number, oldHeight: number, newWidth: number, newHeight: number) {
 
 
-        console.log(9 / 16, oldWidth / oldHeight, newWidth / newHeight, newWidth)
         const widthRatio = newWidth / oldWidth;
         const heightRatio = newHeight / oldHeight;
         return {widthRatio, heightRatio}
